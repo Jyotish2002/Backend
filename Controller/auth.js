@@ -1,6 +1,6 @@
 import users from '../models/auth.js';
 import bcrypt from 'bcryptjs';
-
+import jwt from "jsonwebtoken"
 export const signup = async (req, res) => {
     const { name, email, password } = req.body;
     
@@ -20,8 +20,11 @@ export const signup = async (req, res) => {
             email,
             password: hashedpassword
         });
-
-        res.status(200).json({ result: newuser });
+        const token = jwt.sign({
+            email:newuser.email,id:newuser._id
+        },process.env.JWT_SECRET,{expiresIn:"1h"}
+        )
+        res.status(200).json({ result: newuser , token});
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Something went wrong..." });
@@ -43,10 +46,15 @@ export const login = async (req, res) => {
 
         const isPasswordCorrect = await bcrypt.compare(password, existinguser.password);
         if (!isPasswordCorrect) {
-            return res.status(400).json({ message: "Invalid credentials" });
+            res.status(400).json({ message: "Invalid credentials" });
+            return
         }
-
-        res.status(200).json({ result: existinguser });
+        const token = jwt.sign({
+            email:existinguser.email,id:existinguser._id
+        },process.env.JWT_SECRET,{expiresIn:"1h"}
+        )
+        
+        res.status(200).json({ result: existinguser,token });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Something went wrong..." });
